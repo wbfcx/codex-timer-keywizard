@@ -1,0 +1,790 @@
+Codex定时器_窗口宽度 = 700//0001
+Codex定时器_窗口高度 = 550//0002
+
+选择结果 = HTA_Codex定时器()//0003
+
+TracePrint "选择结果：" & 选择结果//0004
+
+If 选择结果 = "" Then//0005
+    TracePrint "用户取消或关闭界面"//0006
+    ExitScript//0007
+End If//0008
+
+最终延迟 = Codex_计算延迟毫秒(选择结果)//0009
+
+TracePrint "最终延迟毫秒：" & 最终延迟//0010
+TracePrint "最终延迟分钟：" & Int(最终延迟 / 60000)//0011
+
+Delay 最终延迟//0629
+KeyPress "F5", 1//0630
+
+
+
+
+Function HTA_Codex定时器()//0100
+
+    HTA_Codex定时器 = ""//0101
+
+    Dim fso, shell, htaPath, resPath//0102
+    Dim htmlStr, adodb, ts, i, 时间文本//0103
+
+    Set fso = CreateObject("Scripting.FileSystemObject")//0104
+    Set shell = CreateObject("WScript.Shell")//0105
+
+    htaPath = fso.GetSpecialFolder(2) & "\Codex_Timer.hta"//0106
+    resPath = fso.GetSpecialFolder(2) & "\Codex_Timer_Result.txt"//0107
+
+    If fso.FileExists(resPath) Then//0108
+        fso.DeleteFile resPath//0109
+    End If//0110
+
+
+    htmlStr = "<!DOCTYPE html>" & vbCrLf//0111
+    htmlStr = htmlStr & "<html>" & vbCrLf//0112
+    htmlStr = htmlStr & "<head>" & vbCrLf//0113
+    htmlStr = htmlStr & "<meta charset='utf-8'>" & vbCrLf//0114
+    htmlStr = htmlStr & "<meta http-equiv='X-UA-Compatible' content='IE=9'>" & vbCrLf//0115
+    htmlStr = htmlStr & "<title>Codex 定时器</title>" & vbCrLf//0116
+
+    htmlStr = htmlStr & "<hta:application id='oApp' border='thick' caption='yes' sysmenu='yes' showintaskbar='yes' maximizebutton='yes' minimizebutton='yes' scroll='no' windowstate='normal'>" & vbCrLf//0117
+
+
+    htmlStr = htmlStr & "<style>" & vbCrLf//0118
+
+    htmlStr = htmlStr & "html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#f3f5f8;font-family:'Microsoft YaHei UI','Microsoft YaHei';color:#252a31;}" & vbCrLf//0119
+
+
+    '==============================
+    ' 顶部
+    '==============================
+
+    htmlStr = htmlStr & ".top{height:62px;background:#ffffff;border-bottom:1px solid #e1e5ea;position:relative;}" & vbCrLf//0120
+
+    htmlStr = htmlStr & ".brand{position:absolute;left:22px;top:13px;width:36px;height:36px;line-height:36px;text-align:center;border-radius:11px;background:#26394f;color:#fff;font-size:17px;font-weight:bold;box-shadow:0 4px 10px rgba(30,45,65,0.22);}" & vbCrLf//0121
+
+    htmlStr = htmlStr & ".brandText{position:absolute;left:70px;top:12px;text-align:left;}" & vbCrLf//0122
+
+    htmlStr = htmlStr & ".mainTitle{font-size:18px;font-weight:bold;color:#20262d;line-height:23px;}" & vbCrLf//0123
+
+    htmlStr = htmlStr & ".mainSub{font-size:9px;color:#858d97;margin-top:2px;}" & vbCrLf//0124
+
+    htmlStr = htmlStr & ".clock{position:absolute;right:22px;top:13px;text-align:right;}" & vbCrLf//0125
+
+    htmlStr = htmlStr & ".clockLabel{font-size:9px;color:#9299a3;}" & vbCrLf//0126
+
+    htmlStr = htmlStr & ".clockValue{font-size:14px;font-weight:bold;color:#314052;margin-top:3px;}" & vbCrLf//0127
+
+
+    '==============================
+    ' 主区域
+    '==============================
+
+    htmlStr = htmlStr & ".main{width:660px;height:315px;margin:12px auto 0 auto;white-space:nowrap;text-align:left;}" & vbCrLf//0128
+
+    htmlStr = htmlStr & ".leftCol{display:inline-block;width:310px;height:300px;margin-right:12px;vertical-align:top;white-space:normal;}" & vbCrLf//0129
+
+    htmlStr = htmlStr & ".rightCol{display:inline-block;width:330px;height:300px;vertical-align:top;white-space:normal;}" & vbCrLf//0130
+
+    htmlStr = htmlStr & ".panel{height:300px;background:#ffffff;border:1px solid #dfe4ea;border-radius:15px;box-shadow:0 5px 15px rgba(35,45,60,0.09);}" & vbCrLf//0131
+
+    htmlStr = htmlStr & ".leftPanel{padding:15px 16px;}" & vbCrLf//0132
+
+    htmlStr = htmlStr & ".rightPanel{padding:15px 14px;}" & vbCrLf//0133
+
+    htmlStr = htmlStr & ".panelTitle{font-size:14px;font-weight:bold;color:#2d343d;text-align:left;}" & vbCrLf//0134
+
+    htmlStr = htmlStr & ".panelDesc{font-size:9px;color:#9097a0;text-align:left;margin-top:3px;margin-bottom:10px;}" & vbCrLf//0135
+
+
+    '==============================
+    ' 执行时间
+    '==============================
+
+    htmlStr = htmlStr & ".timeLabel{text-align:center;font-size:9px;color:#8c939d;margin-bottom:5px;}" & vbCrLf//0136
+
+    htmlStr = htmlStr & ".timeWrap{width:250px;height:58px;margin:0 auto;position:relative;}" & vbCrLf//0137
+
+    htmlStr = htmlStr & ".timeControl{width:250px;height:52px;background:#f9fafc;border:1px solid #cbd2da;border-radius:15px;white-space:nowrap;overflow:hidden;box-shadow:0 4px 12px rgba(35,50,70,0.12);}" & vbCrLf//0138
+
+    htmlStr = htmlStr & ".timePart{width:68px;height:50px;border:0;background:transparent;text-align:center;font-family:'Microsoft YaHei UI';font-size:27px;font-weight:bold;color:#26384b;outline:none;padding:0;vertical-align:top;}" & vbCrLf//0139
+
+    htmlStr = htmlStr & ".hourPart{margin-left:14px;}" & vbCrLf//0140
+
+    htmlStr = htmlStr & ".fixedColon{display:inline-block;width:18px;height:50px;line-height:45px;text-align:center;font-size:26px;font-weight:bold;color:#7c858f;vertical-align:top;}" & vbCrLf//0141
+
+    htmlStr = htmlStr & ".dropArrow{float:right;width:46px;height:51px;border:0;border-left:1px solid #dde2e7;background:#eef2f6;color:#5e6976;font-size:14px;cursor:pointer;}" & vbCrLf//0142
+
+    htmlStr = htmlStr & ".dropArrow:hover{background:#dfe6ed;color:#26394f;}" & vbCrLf//0143
+
+
+    '==============================
+    ' 时间下拉
+    '==============================
+
+    htmlStr = htmlStr & "#dropPanel{display:none;position:absolute;z-index:1000;left:0;top:58px;width:250px;height:58px;background:#fff;border:1px solid #c8cfd7;border-radius:11px;padding-top:12px;text-align:center;box-shadow:0 8px 20px rgba(30,40,55,0.20);}" & vbCrLf//0144
+
+    htmlStr = htmlStr & ".dropSelect{width:66px;height:30px;border:1px solid #b8c0c9;border-radius:7px;background:#fff;font-family:'Microsoft YaHei UI';font-size:11px;}" & vbCrLf//0145
+
+    htmlStr = htmlStr & ".dropColon{display:inline-block;width:17px;font-size:15px;font-weight:bold;color:#777;}" & vbCrLf//0146
+
+    htmlStr = htmlStr & ".dropOk{width:52px;height:30px;margin-left:6px;border:0;border-radius:7px;background:#3b6794;color:#fff;font-family:'Microsoft YaHei UI';cursor:pointer;box-shadow:0 3px 7px rgba(40,75,110,0.24);}" & vbCrLf//0147
+
+    htmlStr = htmlStr & ".dropOk:hover{background:#315a82;}" & vbCrLf//0148
+
+
+    '==============================
+    ' 时间微调
+    '==============================
+
+    htmlStr = htmlStr & ".divider{height:1px;background:#ebeff3;margin:15px 0 11px 0;}" & vbCrLf//0149
+
+    htmlStr = htmlStr & ".minorTitle{font-size:11px;font-weight:bold;color:#626b76;text-align:left;margin-bottom:7px;}" & vbCrLf//0150
+
+    htmlStr = htmlStr & ".adjustArea{text-align:center;}" & vbCrLf//0151
+
+    htmlStr = htmlStr & ".adjustBtn{width:82px;height:29px;margin:4px 3px;border:1px solid #c7d7e6;border-radius:9px;background:#edf5fc;color:#365f87;font-family:'Microsoft YaHei UI';font-size:9px;cursor:pointer;box-shadow:0 2px 5px rgba(40,75,110,0.10);}" & vbCrLf//0152
+
+    htmlStr = htmlStr & ".adjustBtn:hover{background:#dcecf9;border-color:#9db6cc;box-shadow:0 5px 11px rgba(40,75,110,0.18);}" & vbCrLf//0153
+
+
+    '==============================
+    ' 快捷开始
+    '==============================
+
+    htmlStr = htmlStr & ".presetGrid{text-align:center;margin-top:2px;}" & vbCrLf//0154
+
+    htmlStr = htmlStr & ".presetBtn{width:138px;height:54px;margin:5px 4px;border:1px solid #dce2e8;border-radius:12px;background:#fafbfd;color:#343c46;font-family:'Microsoft YaHei UI';cursor:pointer;box-shadow:0 3px 8px rgba(25,40,55,0.09);}" & vbCrLf//0155
+
+    htmlStr = htmlStr & ".presetBtn:hover{background:#f0f5fa;border-color:#b7c4d1;box-shadow:0 7px 15px rgba(25,40,55,0.15);}" & vbCrLf//0156
+
+    htmlStr = htmlStr & ".presetOn{background:#365f89;color:#fff;border-color:#365f89;box-shadow:0 7px 16px rgba(45,80,115,0.29);}" & vbCrLf//0157
+
+    htmlStr = htmlStr & ".presetBig{display:block;font-size:13px;font-weight:bold;margin-top:7px;}" & vbCrLf//0158
+
+    htmlStr = htmlStr & ".presetSmall{display:block;font-size:8px;color:#969da6;margin-top:3px;}" & vbCrLf//0159
+
+    htmlStr = htmlStr & ".presetOn .presetSmall{color:#dbe5ef;}" & vbCrLf//0160
+
+
+    '==============================
+    ' 底部
+    '==============================
+
+    htmlStr = htmlStr & ".footer{height:58px;background:#fff;border-top:1px solid #dfe4e9;position:absolute;left:0;right:0;bottom:0;text-align:center;}" & vbCrLf//0161
+
+    htmlStr = htmlStr & ".footerInfo{position:absolute;left:22px;top:13px;text-align:left;}" & vbCrLf//0162
+
+    htmlStr = htmlStr & ".footerMain{font-size:9px;color:#626a73;font-weight:bold;}" & vbCrLf//0163
+
+    htmlStr = htmlStr & ".footerSub{font-size:8px;color:#969da5;margin-top:3px;}" & vbCrLf//0164
+
+    htmlStr = htmlStr & ".footerButtons{padding-top:12px;}" & vbCrLf//0165
+
+    htmlStr = htmlStr & ".saveBtn{width:145px;height:34px;border:0;border-radius:10px;background:#355f89;color:#fff;font-family:'Microsoft YaHei UI';font-size:10px;font-weight:bold;cursor:pointer;box-shadow:0 4px 10px rgba(40,75,110,0.27);margin-right:7px;}" & vbCrLf//0166
+
+    htmlStr = htmlStr & ".saveBtn:hover{background:#294e74;box-shadow:0 8px 18px rgba(40,75,110,0.36);}" & vbCrLf//0167
+
+    htmlStr = htmlStr & ".cancelBtn{width:76px;height:34px;border:1px solid #ccd2d9;border-radius:10px;background:#fff;color:#5f6771;font-family:'Microsoft YaHei UI';font-size:9px;cursor:pointer;box-shadow:0 3px 7px rgba(30,40,50,0.08);}" & vbCrLf//0168
+
+    htmlStr = htmlStr & ".cancelBtn:hover{background:#eef1f4;}" & vbCrLf//0169
+
+    htmlStr = htmlStr & "</style>" & vbCrLf//0170
+
+
+    '============================================================
+    ' HTA VBScript
+    '============================================================
+
+    htmlStr = htmlStr & "<script language='vbscript'>" & vbCrLf//0171
+
+
+    htmlStr = htmlStr & "Sub NumberOnly()" & vbCrLf//0172
+    htmlStr = htmlStr & "Dim k" & vbCrLf//0173
+    htmlStr = htmlStr & "k = window.event.keyCode" & vbCrLf//0174
+    htmlStr = htmlStr & "If k = 8 Or k = 9 Or k = 13 Then Exit Sub" & vbCrLf//0175
+    htmlStr = htmlStr & "If k < 48 Or k > 57 Then window.event.returnValue = False" & vbCrLf//0176
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0177
+
+
+    htmlStr = htmlStr & "Sub ClearPreset()" & vbCrLf//0178
+    htmlStr = htmlStr & "Dim i" & vbCrLf//0179
+    htmlStr = htmlStr & "For i = 1 To 6" & vbCrLf//0180
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "q" & Chr(34) & " & CStr(i)).className = " & Chr(34) & "presetBtn" & Chr(34) & vbCrLf//0181
+    htmlStr = htmlStr & "Next" & vbCrLf//0182
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0183
+
+
+    htmlStr = htmlStr & "Sub SetTimeValue(d)" & vbCrLf//0184
+    htmlStr = htmlStr & "Dim h,m" & vbCrLf//0185
+
+    htmlStr = htmlStr & "h = Right(" & Chr(34) & "0" & Chr(34) & " & CStr(Hour(d)),2)" & vbCrLf//0186
+    htmlStr = htmlStr & "m = Right(" & Chr(34) & "0" & Chr(34) & " & CStr(Minute(d)),2)" & vbCrLf//0187
+
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "hourInput" & Chr(34) & ").Value = h" & vbCrLf//0188
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "minuteInput" & Chr(34) & ").Value = m" & vbCrLf//0189
+
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "hourSelect" & Chr(34) & ").Value = h" & vbCrLf//0190
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "minuteSelect" & Chr(34) & ").Value = m" & vbCrLf//0191
+
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0192
+
+
+    htmlStr = htmlStr & "Sub PickRelative(minutes)" & vbCrLf//0193
+    htmlStr = htmlStr & "Dim d,id" & vbCrLf//0194
+
+    htmlStr = htmlStr & "d = DateAdd(" & Chr(34) & "n" & Chr(34) & ",minutes,Now)" & vbCrLf//0195
+
+    htmlStr = htmlStr & "Call SetTimeValue(d)" & vbCrLf//0196
+    htmlStr = htmlStr & "Call ClearPreset()" & vbCrLf//0197
+
+    htmlStr = htmlStr & "id = window.event.srcElement.id" & vbCrLf//0198
+    htmlStr = htmlStr & "document.getElementById(id).className = " & Chr(34) & "presetBtn presetOn" & Chr(34) & vbCrLf//0199
+
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0200
+
+
+    htmlStr = htmlStr & "Function CurrentInputDate()" & vbCrLf//0201
+    htmlStr = htmlStr & "Dim h,m" & vbCrLf//0202
+
+    htmlStr = htmlStr & "CurrentInputDate = Now" & vbCrLf//0203
+
+    htmlStr = htmlStr & "h = Trim(document.getElementById(" & Chr(34) & "hourInput" & Chr(34) & ").Value)" & vbCrLf//0204
+    htmlStr = htmlStr & "m = Trim(document.getElementById(" & Chr(34) & "minuteInput" & Chr(34) & ").Value)" & vbCrLf//0205
+
+    htmlStr = htmlStr & "If IsNumeric(h) = False Then Exit Function" & vbCrLf//0206
+    htmlStr = htmlStr & "If IsNumeric(m) = False Then Exit Function" & vbCrLf//0207
+
+    htmlStr = htmlStr & "If CInt(h) < 0 Or CInt(h) > 23 Then Exit Function" & vbCrLf//0208
+    htmlStr = htmlStr & "If CInt(m) < 0 Or CInt(m) > 59 Then Exit Function" & vbCrLf//0209
+
+    htmlStr = htmlStr & "CurrentInputDate = Date + TimeSerial(CInt(h),CInt(m),0)" & vbCrLf//0210
+
+    htmlStr = htmlStr & "End Function" & vbCrLf//0211
+
+
+    htmlStr = htmlStr & "Sub AddMinutes(minutes)" & vbCrLf//0212
+    htmlStr = htmlStr & "Dim d" & vbCrLf//0213
+
+    htmlStr = htmlStr & "d = CurrentInputDate()" & vbCrLf//0214
+    htmlStr = htmlStr & "d = DateAdd(" & Chr(34) & "n" & Chr(34) & ",minutes,d)" & vbCrLf//0215
+
+    htmlStr = htmlStr & "Call SetTimeValue(d)" & vbCrLf//0216
+    htmlStr = htmlStr & "Call ClearPreset()" & vbCrLf//0217
+
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0218
+
+
+    htmlStr = htmlStr & "Sub TimeTyped()" & vbCrLf//0219
+    htmlStr = htmlStr & "Dim h,m" & vbCrLf//0220
+
+    htmlStr = htmlStr & "Call ClearPreset()" & vbCrLf//0221
+
+    htmlStr = htmlStr & "h = Trim(document.getElementById(" & Chr(34) & "hourInput" & Chr(34) & ").Value)" & vbCrLf//0222
+    htmlStr = htmlStr & "m = Trim(document.getElementById(" & Chr(34) & "minuteInput" & Chr(34) & ").Value)" & vbCrLf//0223
+
+    htmlStr = htmlStr & "If IsNumeric(h) And IsNumeric(m) Then" & vbCrLf//0224
+
+    htmlStr = htmlStr & "If CInt(h) >= 0 And CInt(h) <= 23 And CInt(m) >= 0 And CInt(m) <= 59 Then" & vbCrLf//0225
+
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "hourSelect" & Chr(34) & ").Value = Right(" & Chr(34) & "0" & Chr(34) & " & CStr(CInt(h)),2)" & vbCrLf//0226
+
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "minuteSelect" & Chr(34) & ").Value = Right(" & Chr(34) & "0" & Chr(34) & " & CStr(CInt(m)),2)" & vbCrLf//0227
+
+    htmlStr = htmlStr & "End If" & vbCrLf//0228
+    htmlStr = htmlStr & "End If" & vbCrLf//0229
+
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0230
+
+
+    htmlStr = htmlStr & "Sub HourTyped()" & vbCrLf//0231
+
+    htmlStr = htmlStr & "Call TimeTyped()" & vbCrLf//0232
+
+    htmlStr = htmlStr & "If Len(document.getElementById(" & Chr(34) & "hourInput" & Chr(34) & ").Value) >= 2 Then" & vbCrLf//0233
+
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "minuteInput" & Chr(34) & ").focus" & vbCrLf//0234
+
+    htmlStr = htmlStr & "End If" & vbCrLf//0235
+
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0236
+
+
+    htmlStr = htmlStr & "Sub NormalizeTime()" & vbCrLf//0237
+    htmlStr = htmlStr & "Dim h,m" & vbCrLf//0238
+
+    htmlStr = htmlStr & "h = Trim(document.getElementById(" & Chr(34) & "hourInput" & Chr(34) & ").Value)" & vbCrLf//0239
+    htmlStr = htmlStr & "m = Trim(document.getElementById(" & Chr(34) & "minuteInput" & Chr(34) & ").Value)" & vbCrLf//0240
+
+    htmlStr = htmlStr & "If IsNumeric(h) And IsNumeric(m) Then" & vbCrLf//0241
+
+    htmlStr = htmlStr & "If CInt(h) >= 0 And CInt(h) <= 23 And CInt(m) >= 0 And CInt(m) <= 59 Then" & vbCrLf//0242
+
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "hourInput" & Chr(34) & ").Value = Right(" & Chr(34) & "0" & Chr(34) & " & CStr(CInt(h)),2)" & vbCrLf//0243
+
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "minuteInput" & Chr(34) & ").Value = Right(" & Chr(34) & "0" & Chr(34) & " & CStr(CInt(m)),2)" & vbCrLf//0244
+
+    htmlStr = htmlStr & "End If" & vbCrLf//0245
+    htmlStr = htmlStr & "End If" & vbCrLf//0246
+
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0247
+
+
+    htmlStr = htmlStr & "Sub ToggleDrop()" & vbCrLf//0248
+
+    htmlStr = htmlStr & "Dim box,h,m" & vbCrLf//0249
+
+    htmlStr = htmlStr & "Set box = document.getElementById(" & Chr(34) & "dropPanel" & Chr(34) & ")" & vbCrLf//0250
+
+    htmlStr = htmlStr & "h = Trim(document.getElementById(" & Chr(34) & "hourInput" & Chr(34) & ").Value)" & vbCrLf//0251
+    htmlStr = htmlStr & "m = Trim(document.getElementById(" & Chr(34) & "minuteInput" & Chr(34) & ").Value)" & vbCrLf//0252
+
+    htmlStr = htmlStr & "If IsNumeric(h) Then" & vbCrLf//0253
+
+    htmlStr = htmlStr & "If CInt(h) >= 0 And CInt(h) <= 23 Then document.getElementById(" & Chr(34) & "hourSelect" & Chr(34) & ").Value = Right(" & Chr(34) & "0" & Chr(34) & " & CStr(CInt(h)),2)" & vbCrLf//0254
+
+    htmlStr = htmlStr & "End If" & vbCrLf//0255
+
+    htmlStr = htmlStr & "If IsNumeric(m) Then" & vbCrLf//0256
+
+    htmlStr = htmlStr & "If CInt(m) >= 0 And CInt(m) <= 59 Then document.getElementById(" & Chr(34) & "minuteSelect" & Chr(34) & ").Value = Right(" & Chr(34) & "0" & Chr(34) & " & CStr(CInt(m)),2)" & vbCrLf//0257
+
+    htmlStr = htmlStr & "End If" & vbCrLf//0258
+
+    htmlStr = htmlStr & "If box.style.display = " & Chr(34) & "block" & Chr(34) & " Then" & vbCrLf//0259
+
+    htmlStr = htmlStr & "box.style.display = " & Chr(34) & "none" & Chr(34) & vbCrLf//0260
+
+    htmlStr = htmlStr & "Else" & vbCrLf//0261
+
+    htmlStr = htmlStr & "box.style.display = " & Chr(34) & "block" & Chr(34) & vbCrLf//0262
+
+    htmlStr = htmlStr & "End If" & vbCrLf//0263
+
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0264
+
+
+    htmlStr = htmlStr & "Sub ApplyDrop()" & vbCrLf//0265
+
+    htmlStr = htmlStr & "Dim h,m" & vbCrLf//0266
+
+    htmlStr = htmlStr & "h = document.getElementById(" & Chr(34) & "hourSelect" & Chr(34) & ").Value" & vbCrLf//0267
+    htmlStr = htmlStr & "m = document.getElementById(" & Chr(34) & "minuteSelect" & Chr(34) & ").Value" & vbCrLf//0268
+
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "hourInput" & Chr(34) & ").Value = h" & vbCrLf//0269
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "minuteInput" & Chr(34) & ").Value = m" & vbCrLf//0270
+
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "dropPanel" & Chr(34) & ").style.display = " & Chr(34) & "none" & Chr(34) & vbCrLf//0271
+
+    htmlStr = htmlStr & "Call ClearPreset()" & vbCrLf//0272
+
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0273
+
+
+    htmlStr = htmlStr & "Function CheckTime()" & vbCrLf//0274
+
+    htmlStr = htmlStr & "Dim h,m" & vbCrLf//0275
+
+    htmlStr = htmlStr & "CheckTime = False" & vbCrLf//0276
+
+    htmlStr = htmlStr & "h = Trim(document.getElementById(" & Chr(34) & "hourInput" & Chr(34) & ").Value)" & vbCrLf//0277
+    htmlStr = htmlStr & "m = Trim(document.getElementById(" & Chr(34) & "minuteInput" & Chr(34) & ").Value)" & vbCrLf//0278
+
+    htmlStr = htmlStr & "If h = " & Chr(34) & Chr(34) & " Or m = " & Chr(34) & Chr(34) & " Then" & vbCrLf//0279
+    htmlStr = htmlStr & "MsgBox " & Chr(34) & "请输入完整执行时间" & Chr(34) & vbCrLf//0280
+    htmlStr = htmlStr & "Exit Function" & vbCrLf//0281
+    htmlStr = htmlStr & "End If" & vbCrLf//0282
+
+    htmlStr = htmlStr & "If IsNumeric(h) = False Or IsNumeric(m) = False Then" & vbCrLf//0283
+    htmlStr = htmlStr & "MsgBox " & Chr(34) & "执行时间只能填写数字" & Chr(34) & vbCrLf//0284
+    htmlStr = htmlStr & "Exit Function" & vbCrLf//0285
+    htmlStr = htmlStr & "End If" & vbCrLf//0286
+
+    htmlStr = htmlStr & "If CInt(h) < 0 Or CInt(h) > 23 Then" & vbCrLf//0287
+    htmlStr = htmlStr & "MsgBox " & Chr(34) & "小时必须在 00-23 之间" & Chr(34) & vbCrLf//0288
+    htmlStr = htmlStr & "Exit Function" & vbCrLf//0289
+    htmlStr = htmlStr & "End If" & vbCrLf//0290
+
+    htmlStr = htmlStr & "If CInt(m) < 0 Or CInt(m) > 59 Then" & vbCrLf//0291
+    htmlStr = htmlStr & "MsgBox " & Chr(34) & "分钟必须在 00-59 之间" & Chr(34) & vbCrLf//0292
+    htmlStr = htmlStr & "Exit Function" & vbCrLf//0293
+    htmlStr = htmlStr & "End If" & vbCrLf//0294
+
+    htmlStr = htmlStr & "Call NormalizeTime()" & vbCrLf//0295
+
+    htmlStr = htmlStr & "CheckTime = True" & vbCrLf//0296
+
+    htmlStr = htmlStr & "End Function" & vbCrLf//0297
+
+
+    htmlStr = htmlStr & "Sub WriteResult(val)" & vbCrLf//0298
+
+    htmlStr = htmlStr & "Dim f,t" & vbCrLf//0299
+
+    htmlStr = htmlStr & "Set f = CreateObject(" & Chr(34) & "Scripting.FileSystemObject" & Chr(34) & ")" & vbCrLf//0300
+
+    htmlStr = htmlStr & "Set t = f.CreateTextFile(" & Chr(34) & resPath & Chr(34) & ",True)" & vbCrLf//0301
+
+    htmlStr = htmlStr & "t.Write val" & vbCrLf//0302
+    htmlStr = htmlStr & "t.Close" & vbCrLf//0303
+
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0304
+
+
+    htmlStr = htmlStr & "Sub SavePage()" & vbCrLf//0305
+
+    htmlStr = htmlStr & "Dim h,m" & vbCrLf//0306
+
+    htmlStr = htmlStr & "If CheckTime() = False Then Exit Sub" & vbCrLf//0307
+
+    htmlStr = htmlStr & "h = document.getElementById(" & Chr(34) & "hourInput" & Chr(34) & ").Value" & vbCrLf//0308
+    htmlStr = htmlStr & "m = document.getElementById(" & Chr(34) & "minuteInput" & Chr(34) & ").Value" & vbCrLf//0309
+
+    htmlStr = htmlStr & "Call WriteResult(" & Chr(34) & "TIME|" & Chr(34) & " & h & " & Chr(34) & ":" & Chr(34) & " & m)" & vbCrLf//0310
+
+    htmlStr = htmlStr & "window.close" & vbCrLf//0311
+
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0312
+
+
+    htmlStr = htmlStr & "Sub CancelPage()" & vbCrLf//0313
+    htmlStr = htmlStr & "window.close" & vbCrLf//0314
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0315
+
+
+    htmlStr = htmlStr & "Sub Window_OnLoad()" & vbCrLf//0316
+
+    htmlStr = htmlStr & "Dim winW,winH,posX,posY,d" & vbCrLf//0317
+
+    htmlStr = htmlStr & "winW = " & CStr(Codex定时器_窗口宽度) & vbCrLf//0318
+    htmlStr = htmlStr & "winH = " & CStr(Codex定时器_窗口高度) & vbCrLf//0319
+
+    htmlStr = htmlStr & "posX = (screen.width-winW)/2" & vbCrLf//0320
+    htmlStr = htmlStr & "posY = (screen.height-winH)/2" & vbCrLf//0321
+
+    htmlStr = htmlStr & "window.resizeTo winW,winH" & vbCrLf//0322
+    htmlStr = htmlStr & "window.moveTo posX,posY" & vbCrLf//0323
+
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "nowTime" & Chr(34) & ").innerText = CStr(Now)" & vbCrLf//0324
+
+    htmlStr = htmlStr & "d = DateAdd(" & Chr(34) & "h" & Chr(34) & ",5,Now)" & vbCrLf//0325
+
+    htmlStr = htmlStr & "Call SetTimeValue(d)" & vbCrLf//0326
+
+    htmlStr = htmlStr & "document.getElementById(" & Chr(34) & "q6" & Chr(34) & ").className = " & Chr(34) & "presetBtn presetOn" & Chr(34) & vbCrLf//0327
+
+    htmlStr = htmlStr & "End Sub" & vbCrLf//0328
+
+
+    htmlStr = htmlStr & "</script>" & vbCrLf//0329
+    htmlStr = htmlStr & "</head>" & vbCrLf//0330
+
+
+    '============================================================
+    ' HTML 页面
+    '============================================================
+
+    htmlStr = htmlStr & "<body onload='Window_OnLoad()'>" & vbCrLf//0331
+
+
+    ' 顶部
+    htmlStr = htmlStr & "<div class='top'>" & vbCrLf//0332
+
+    htmlStr = htmlStr & "<div class='brand'>C</div>" & vbCrLf//0333
+
+    htmlStr = htmlStr & "<div class='brandText'>" & vbCrLf//0334
+    htmlStr = htmlStr & "<div class='mainTitle'>Codex 定时器</div>" & vbCrLf//0335
+    htmlStr = htmlStr & "<div class='mainSub'>设置执行时间，到点自动继续当前项目</div>" & vbCrLf//0336
+    htmlStr = htmlStr & "</div>" & vbCrLf//0337
+
+    htmlStr = htmlStr & "<div class='clock'>" & vbCrLf//0338
+    htmlStr = htmlStr & "<div class='clockLabel'>当前电脑时间</div>" & vbCrLf//0339
+    htmlStr = htmlStr & "<div id='nowTime' class='clockValue'>--</div>" & vbCrLf//0340
+    htmlStr = htmlStr & "</div>" & vbCrLf//0341
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0342
+
+
+    ' 主体
+    htmlStr = htmlStr & "<div class='main'>" & vbCrLf//0343
+
+
+    '==============================
+    ' 左侧
+    '==============================
+
+    htmlStr = htmlStr & "<div class='leftCol'>" & vbCrLf//0344
+
+    htmlStr = htmlStr & "<div class='panel leftPanel'>" & vbCrLf//0345
+
+    htmlStr = htmlStr & "<div class='panelTitle'>执行时间</div>" & vbCrLf//0346
+
+    htmlStr = htmlStr & "<div class='panelDesc'>可以直接输入小时和分钟，也可以使用右侧 ▼ 选择</div>" & vbCrLf//0347
+
+    htmlStr = htmlStr & "<div class='timeLabel'>24 小时制</div>" & vbCrLf//0348
+
+    htmlStr = htmlStr & "<div class='timeWrap'>" & vbCrLf//0349
+
+    htmlStr = htmlStr & "<div class='timeControl'>" & vbCrLf//0350
+
+    htmlStr = htmlStr & "<input id='hourInput' class='timePart hourPart' maxlength='2' onkeypress='NumberOnly()' onkeyup='HourTyped()' onblur='NormalizeTime()'>" & vbCrLf//0351
+
+    htmlStr = htmlStr & "<span class='fixedColon'>:</span>" & vbCrLf//0352
+
+    htmlStr = htmlStr & "<input id='minuteInput' class='timePart' maxlength='2' onkeypress='NumberOnly()' onkeyup='TimeTyped()' onblur='NormalizeTime()'>" & vbCrLf//0353
+
+    htmlStr = htmlStr & "<button class='dropArrow' onclick='ToggleDrop()'>▼</button>" & vbCrLf//0354
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0355
+
+
+    htmlStr = htmlStr & "<div id='dropPanel'>" & vbCrLf//0356
+
+    htmlStr = htmlStr & "<select id='hourSelect' class='dropSelect'>" & vbCrLf//0357
+
+    For i = 0 To 23//0358
+
+        时间文本 = Codex_两位数字(i)//0359
+
+        htmlStr = htmlStr & "<option value='" & 时间文本 & "'>" & 时间文本 & "</option>" & vbCrLf//0360
+
+    Next//0361
+
+    htmlStr = htmlStr & "</select>" & vbCrLf//0362
+
+    htmlStr = htmlStr & "<span class='dropColon'>:</span>" & vbCrLf//0363
+
+    htmlStr = htmlStr & "<select id='minuteSelect' class='dropSelect'>" & vbCrLf//0364
+
+    For i = 0 To 59//0365
+
+        时间文本 = Codex_两位数字(i)//0366
+
+        htmlStr = htmlStr & "<option value='" & 时间文本 & "'>" & 时间文本 & "</option>" & vbCrLf//0367
+
+    Next//0368
+
+    htmlStr = htmlStr & "</select>" & vbCrLf//0369
+
+    htmlStr = htmlStr & "<button class='dropOk' onclick='ApplyDrop()'>确定</button>" & vbCrLf//0370
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0371
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0372
+
+
+    htmlStr = htmlStr & "<div class='divider'></div>" & vbCrLf//0373
+
+    htmlStr = htmlStr & "<div class='minorTitle'>时间微调</div>" & vbCrLf//0374
+
+    htmlStr = htmlStr & "<div class='adjustArea'>" & vbCrLf//0375
+
+    htmlStr = htmlStr & "<button class='adjustBtn' onclick='AddMinutes(5)'>+ 5 分钟</button>" & vbCrLf//0376
+
+    htmlStr = htmlStr & "<button class='adjustBtn' onclick='AddMinutes(10)'>+ 10 分钟</button>" & vbCrLf//0377
+
+    htmlStr = htmlStr & "<button class='adjustBtn' onclick='AddMinutes(15)'>+ 15 分钟</button>" & vbCrLf//0378
+
+    htmlStr = htmlStr & "<button class='adjustBtn' onclick='AddMinutes(30)'>+ 30 分钟</button>" & vbCrLf//0379
+
+    htmlStr = htmlStr & "<button class='adjustBtn' onclick='AddMinutes(60)'>+ 1 小时</button>" & vbCrLf//0380
+
+    htmlStr = htmlStr & "<button class='adjustBtn' onclick='AddMinutes(120)'>+ 2 小时</button>" & vbCrLf//0381
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0382
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0383
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0384
+
+
+    '==============================
+    ' 右侧
+    '==============================
+
+    htmlStr = htmlStr & "<div class='rightCol'>" & vbCrLf//0385
+
+    htmlStr = htmlStr & "<div class='panel rightPanel'>" & vbCrLf//0386
+
+    htmlStr = htmlStr & "<div class='panelTitle'>快速设置</div>" & vbCrLf//0387
+
+    htmlStr = htmlStr & "<div class='panelDesc'>直接选择从现在开始等待多长时间</div>" & vbCrLf//0388
+
+    htmlStr = htmlStr & "<div class='presetGrid'>" & vbCrLf//0389
+
+
+    htmlStr = htmlStr & "<button id='q1' class='presetBtn' onclick='PickRelative(30)'>" & vbCrLf//0390
+    htmlStr = htmlStr & "<span class='presetBig'>30 分钟</span>" & vbCrLf//0391
+    htmlStr = htmlStr & "<span class='presetSmall'>从当前时间开始</span>" & vbCrLf//0392
+    htmlStr = htmlStr & "</button>" & vbCrLf//0393
+
+
+    htmlStr = htmlStr & "<button id='q2' class='presetBtn' onclick='PickRelative(60)'>" & vbCrLf//0394
+    htmlStr = htmlStr & "<span class='presetBig'>1 小时</span>" & vbCrLf//0395
+    htmlStr = htmlStr & "<span class='presetSmall'>从当前时间开始</span>" & vbCrLf//0396
+    htmlStr = htmlStr & "</button>" & vbCrLf//0397
+
+
+    htmlStr = htmlStr & "<button id='q3' class='presetBtn' onclick='PickRelative(120)'>" & vbCrLf//0398
+    htmlStr = htmlStr & "<span class='presetBig'>2 小时</span>" & vbCrLf//0399
+    htmlStr = htmlStr & "<span class='presetSmall'>从当前时间开始</span>" & vbCrLf//0400
+    htmlStr = htmlStr & "</button>" & vbCrLf//0401
+
+
+    htmlStr = htmlStr & "<button id='q4' class='presetBtn' onclick='PickRelative(180)'>" & vbCrLf//0402
+    htmlStr = htmlStr & "<span class='presetBig'>3 小时</span>" & vbCrLf//0403
+    htmlStr = htmlStr & "<span class='presetSmall'>从当前时间开始</span>" & vbCrLf//0404
+    htmlStr = htmlStr & "</button>" & vbCrLf//0405
+
+
+    htmlStr = htmlStr & "<button id='q5' class='presetBtn' onclick='PickRelative(240)'>" & vbCrLf//0406
+    htmlStr = htmlStr & "<span class='presetBig'>4 小时</span>" & vbCrLf//0407
+    htmlStr = htmlStr & "<span class='presetSmall'>从当前时间开始</span>" & vbCrLf//0408
+    htmlStr = htmlStr & "</button>" & vbCrLf//0409
+
+
+    htmlStr = htmlStr & "<button id='q6' class='presetBtn' onclick='PickRelative(300)'>" & vbCrLf//0410
+    htmlStr = htmlStr & "<span class='presetBig'>5 小时</span>" & vbCrLf//0411
+    htmlStr = htmlStr & "<span class='presetSmall'>默认选择</span>" & vbCrLf//0412
+    htmlStr = htmlStr & "</button>" & vbCrLf//0413
+
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0414
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0415
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0416
+
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0417
+
+
+    '==============================
+    ' 底部
+    '==============================
+
+    htmlStr = htmlStr & "<div class='footer'>" & vbCrLf//0418
+
+    htmlStr = htmlStr & "<div class='footerInfo'>" & vbCrLf//0419
+    htmlStr = htmlStr & "<div class='footerMain'>保存后开始等待</div>" & vbCrLf//0420
+    htmlStr = htmlStr & "<div class='footerSub'>取消或直接关闭窗口不会启动定时任务</div>" & vbCrLf//0421
+    htmlStr = htmlStr & "</div>" & vbCrLf//0422
+
+    htmlStr = htmlStr & "<div class='footerButtons'>" & vbCrLf//0423
+
+    htmlStr = htmlStr & "<button class='saveBtn' onclick='SavePage()'>保存并开始等待</button>" & vbCrLf//0424
+
+    htmlStr = htmlStr & "<button class='cancelBtn' onclick='CancelPage()'>取消</button>" & vbCrLf//0425
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0426
+
+    htmlStr = htmlStr & "</div>" & vbCrLf//0427
+
+
+    htmlStr = htmlStr & "</body>" & vbCrLf//0428
+    htmlStr = htmlStr & "</html>" & vbCrLf//0429
+
+
+    '============================================================
+    ' 写入并打开 HTA
+    '============================================================
+
+    Set adodb = CreateObject("Adodb.Stream")//0430
+
+    adodb.Type = 2//0431
+    adodb.CharSet = "utf-8"//0432
+    adodb.Open//0433
+
+    adodb.WriteText htmlStr//0434
+
+    adodb.SaveToFile htaPath, 2//0435
+
+    adodb.Close//0436
+
+
+    shell.Run "mshta.exe """ & htaPath & """", 1, True//0437
+
+
+    If fso.FileExists(resPath) Then//0438
+
+        Set ts = fso.OpenTextFile(resPath, 1)//0439
+
+        HTA_Codex定时器 = Trim(ts.ReadAll)//0440
+
+        ts.Close//0441
+
+        fso.DeleteFile resPath//0442
+
+    Else//0443
+
+        HTA_Codex定时器 = ""//0444
+
+    End If//0445
+
+
+    If fso.FileExists(htaPath) Then fso.DeleteFile htaPath//0446
+
+
+    Set adodb = Nothing//0447
+    Set shell = Nothing//0448
+    Set fso = Nothing//0449
+
+End Function//0450
+
+
+Function Codex_两位数字(数字)//0500
+
+    If 数字 < 10 Then//0501
+
+        Codex_两位数字 = "0" & 数字//0502
+
+    Else//0503
+
+        Codex_两位数字 = CStr(数字)//0504
+
+    End If//0505
+
+End Function//0506
+
+Function Codex_计算延迟毫秒(选择结果)//0600
+
+    Dim 结果数组, 时间数组//0601
+    Dim 目标小时, 目标分钟//0602
+    Dim 当前秒数, 目标秒数, 相差秒数//0603
+
+    Codex_计算延迟毫秒 = 0//0604
+
+    结果数组 = Split(选择结果, "|")//0605
+
+    If UBound(结果数组) < 1 Then//0606
+        Exit Function//0607
+    End If//0608
+
+    时间数组 = Split(结果数组(1), ":")//0609
+
+    If UBound(时间数组) < 1 Then//0610
+        Exit Function//0611
+    End If//0612
+
+    If IsNumeric(时间数组(0)) = False Then//0613
+        Exit Function//0614
+    End If//0615
+
+    If IsNumeric(时间数组(1)) = False Then//0616
+        Exit Function//0617
+    End If//0618
+
+    目标小时 = CInt(时间数组(0))//0619
+    目标分钟 = CInt(时间数组(1))//0620
+
+    当前秒数 = Hour(Now()) * 3600 + Minute(Now()) * 60 + Second(Now())//0621
+    目标秒数 = 目标小时 * 3600 + 目标分钟 * 60//0622
+
+    相差秒数 = 目标秒数 - 当前秒数//0623
+
+    If 相差秒数 <= 0 Then//0624
+        相差秒数 = 相差秒数 + 86400//0625
+    End If//0626
+
+    Codex_计算延迟毫秒 = 相差秒数 * 1000//0627
+
+End Function//0628
